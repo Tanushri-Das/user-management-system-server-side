@@ -1,9 +1,8 @@
-// server.js
 
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { MongoClient, ObjectId } = require("mongodb");
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -14,16 +13,10 @@ app.use(express.json());
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.tdjlbxg.mongodb.net/userManagement?retryWrites=true&w=majority`;
 
 const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
 });
 
-app.get("/", (req, res) => {
-  res.send("User Management System is running");
-});
 
 app.get("/users", async (req, res) => {
   try {
@@ -42,8 +35,11 @@ app.post("/users", async (req, res) => {
     await client.connect();
     const userCollection = client.db("userManagement").collection("usersCollection");
     const newUser = req.body;
+    console.log("New user data:", newUser); // Log the new user data
     const result = await userCollection.insertOne(newUser);
-    res.json(result.ops[0]);
+    const insertedUser = result.ops[0]; // Extract the inserted user data
+    console.log("Inserted user:", insertedUser); // Log the inserted user data
+    res.json(insertedUser); // Return only the inserted user data
   } catch (error) {
     console.error("Error creating user:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -83,7 +79,7 @@ app.put("/users/:id", async (req, res) => {
   }
 });
 
-app.delete('/users/:id', async (req, res) => {
+app.delete("/users/:id", async (req, res) => {
   try {
     await client.connect();
     const userCollection = client.db("userManagement").collection("usersCollection");
@@ -91,16 +87,18 @@ app.delete('/users/:id', async (req, res) => {
     const objectId = new ObjectId(userId);
     const result = await userCollection.deleteOne({ _id: objectId });
     if (result.deletedCount === 1) {
-      res.json({ message: 'User deleted successfully' });
+      res.json({ message: "User deleted successfully" });
     } else {
-      res.status(404).json({ error: 'User not found' });
+      res.status(404).json({ error: "User not found" });
     }
   } catch (error) {
     console.error("Error deleting user:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
-
+app.get("/", (req, res) => {
+  res.send("User Management System is running");
+});
 app.listen(port, () => {
   console.log(`User Management System is running on port ${port}`);
 });
